@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
     // Unitree DDS Config
     unitree::robot::ChannelFactory::Instance()->Init(0, vm["network"].as<std::string>());
-
+    
     init_fsm_state();
 
     FSMState::lowcmd->msg_.mode_machine() = 5; // 29dof
@@ -53,7 +53,20 @@ int main(int argc, char** argv)
 
     while (true)
     {
-        sleep(1);
+        FSMState::keyboard->update();
+        if(FSMState::keyboard->on_pressed) {
+            const auto k = FSMState::keyboard->key();
+            if (k == "up") {
+                fsm->request_state("FixStand");
+            }
+            if(k == "right") {
+                fsm->request_state("Velocity");
+            }
+            if(k == "down") {
+                fsm->request_state("Passive");
+            }
+        }
+        usleep(1000);
     }
     
     return 0;

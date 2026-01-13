@@ -55,6 +55,24 @@ public:
             "FSM", 0, this->dt * 1e6, &CtrlFSM::run_, this);
         spdlog::info("FSM: Start {}", currentState->getStateString());
     }
+    
+    void request_state(const std::string& name)
+    {
+        for(auto& s : states)
+        {
+          if (s && s->getStateString() == name)
+          {
+            requested_state_.store(s->getState(), std::memory_order_relaxed);
+            return;
+          }
+        }
+        spdlog::warn("FSM: request_state('{}') ignored (unknown state name)", name);
+    }
+    
+    void request_state(int id)
+    {
+        requested_state_.store(id, std::memory_order_relaxed);
+    }
 
     void add(std::shared_ptr<BaseState> state)
     {
@@ -78,9 +96,24 @@ public:
     std::vector<std::shared_ptr<BaseState>> states;
 private:
     const double dt = 0.001;
-
+    std::atomic<int> requested_state_{0};
     void run_()
     {
+        int req = requested_state_.exchange(0, std::memory_order_relaxed);
+        if(req != 0 && !currentState->isState(req))
+        {
+            for(auto & state : states)
+            {
+                if(state->isState(req))
+                {
+                    spdlog::info("FSM: (request) Change state from {} to {}", currentState->getStateString(), state->getStateString());
+                    currentState->exit();
+                    currentState = state;
+                    currentState->enter();
+                    break;
+                }              
+            }
+        }
         currentState->pre_run();
         currentState->run();
         currentState->post_run();

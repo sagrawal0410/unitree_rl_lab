@@ -17,8 +17,8 @@ from isaaclab.utils import configclass
 
 from unitree_rl_lab.assets.robots import unitree_actuators
 
-UNITREE_MODEL_DIR = "path/to/unitree_model"  # Replace with the actual path to your unitree_model directory
-UNITREE_ROS_DIR = "path/to/unitree_ros"  # Replace with the actual path to your unitree_ros package
+UNITREE_MODEL_DIR = "/home/liquid/unitree_model"  # Replace with the actual path to your unitree_model directory
+UNITREE_ROS_DIR = "/home/liquid/unitree_ros"  # Replace with the actual path to your unitree_ros package
 
 
 @configclass
@@ -408,7 +408,7 @@ UNITREE_G1_29DOF_CFG = UnitreeArticulationCfg(
             "right_hip_pitch_joint": -0.1,
             ".*_knee_joint": 0.3,
             ".*_ankle_pitch_joint": -0.2,
-            ".*_shoulder_pitch_joint": 0.3,
+            ".*_shoulder_pitch_joint": -0.4,
             "left_shoulder_roll_joint": 0.25,
             "right_shoulder_roll_joint": -0.25,
             ".*_elbow_joint": 0.97,
