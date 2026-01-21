@@ -34,24 +34,35 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     // Smooth velocity command with exponential smoothing
     static std::vector<float> current_cmd = {0.0f, 0.0f, 0.0f};
     static std::vector<float> target_cmd = {0.0f, 0.0f, 0.0f};
+    static std::string last_active_key = "";  // Track last active key to detect transitions
     const float smoothing = 0.15f;  // Smooth acceleration (lower = smoother)
     const float deadzone = 0.005f;  // Very small deadzone - zero out tiny values immediately
     
     // Check if a valid movement key is pressed
     bool key_pressed = (key_commands.find(key) != key_commands.end() && !key.empty());
     
-    // Check if key was just released - immediately zero to prevent marching
+    // Check if key was just released
     bool key_released = FSMState::keyboard->on_released;
     
-    if (key_released)
+    // Detect if we're transitioning from forward/backward to no key (this is when marching happens)
+    bool was_forward_backward = (last_active_key == "w" || last_active_key == "s");
+    bool is_now_empty = (!key_pressed && key.empty());
+    bool forward_to_stop_transition = was_forward_backward && is_now_empty;
+    
+    if (key_released || forward_to_stop_transition)
     {
-        // Immediately zero out when key is released to prevent marching in place
+        // Immediately zero out when key is released OR when transitioning from forward/backward to stop
+        // This prevents marching in place
         current_cmd = {0.0f, 0.0f, 0.0f};
         target_cmd = {0.0f, 0.0f, 0.0f};
+        if (key_released) {
+            last_active_key = "";  // Reset tracking on release
+        }
     }
     else if (key_pressed)
     {
         target_cmd = key_commands[key];
+        last_active_key = key;  // Track which key is active
         spdlog::info("Command: [{:.3f}, {:.3f}, {:.3f}]", target_cmd[0], target_cmd[1], target_cmd[2]);
         
         // Smooth interpolation to target when key is pressed
@@ -61,7 +72,8 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     }
     else
     {
-        // When no key is pressed (but not just released), use very fast decay
+        // When no key is pressed and not in a forward-to-stop transition, use very fast decay
+        // This handles other cases like turning commands decaying
         const float fast_stop_smoothing = 0.9f;  // Very fast decay when stopping
         
         for(size_t i = 0; i < 3; i++) {
