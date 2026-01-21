@@ -23,12 +23,12 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     // Forward/backward: policy generalizes well beyond training range (trained 0.1, works at 0.4)
     // Lateral/turning: limited to 50% of training max (NO curriculum, stayed at 0.1 entire training)
     static std::unordered_map<std::string, std::vector<float>> key_commands = {
-        {"w", {0.4f, 0.0f, 0.0f}},    // Walk forward - generalizes well
-        {"s", {-0.3f, 0.0f, 0.0f}},   // Walk backward - generalizes well  
-        {"a", {0.0f, 0.05f, 0.0f}},   // Strafe left (50% of training max)
-        {"d", {0.0f, -0.05f, 0.0f}},  // Strafe right (50% of training max)
-        {"q", {0.0f, 0.0f, 0.05f}},   // Turn left (50% max - CRITICAL: no ang curriculum)
-        {"e", {0.0f, 0.0f, -0.05f}}   // Turn right (50% max - CRITICAL: no ang curriculum)
+        {"w", {0.5f, 0.0f, 0.0f}},    // Walk forward - generalizes well
+        {"s", {-0.5f, 0.0f, 0.0f}},   // Walk backward - generalizes well  
+        {"a", {0.0f, 0.50f, 0.0f}},   // Strafe left (50% of training max)
+        {"d", {0.0f, -0.50f, 0.0f}},  // Strafe right (50% of training max)
+        {"q", {0.0f, 0.0f, 1.00f}},   // Turn left (50% max - CRITICAL: no ang curriculum)
+        {"e", {0.0f, 0.0f, -1.00f}}   // Turn right (50% max - CRITICAL: no ang curriculum)
     };
     
     // Smooth velocity command with exponential smoothing
