@@ -23,8 +23,8 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     // Forward/backward: policy generalizes well beyond training range (trained 0.1, works at 0.4)
     // Lateral/turning: limited to 50% of training max (NO curriculum, stayed at 0.1 entire training)
     static std::unordered_map<std::string, std::vector<float>> key_commands = {
-        {"w", {0.4f, 0.0f, 0.0f}},    // Walk forward - generalizes well
-        {"s", {-0.3f, 0.0f, 0.0f}},   // Walk backward - generalizes well  
+        {"w", {0.5f, 0.0f, 0.0f}},    // Walk forward - generalizes well
+        {"s", {-0.5f, 0.0f, 0.0f}},   // Walk backward - generalizes well  
         {"a", {0.0f, 0.50f, 0.0f}},   // Strafe left (50% of training max)
         {"d", {0.0f, -0.50f, 0.0f}},  // Strafe right (50% of training max)
         {"q", {0.0f, 0.0f, 1.00f}},   // Turn left (50% max - CRITICAL: no ang curriculum)
@@ -35,9 +35,12 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     static std::vector<float> current_cmd = {0.0f, 0.0f, 0.0f};
     static std::vector<float> target_cmd = {0.0f, 0.0f, 0.0f};
     const float smoothing = 0.15f;  // Smooth acceleration (lower = smoother)
+    const float stop_smoothing = 0.4f;  // Faster decay when stopping (higher = faster)
+    const float deadzone = 0.05f;  // More aggressive deadzone to prevent marching in place
     
     // Update target based on key press
-    if (key_commands.find(key) != key_commands.end())
+    bool key_pressed = (key_commands.find(key) != key_commands.end());
+    if (key_pressed)
     {
         target_cmd = key_commands[key];
         spdlog::info("Command: [{:.3f}, {:.3f}, {:.3f}]", target_cmd[0], target_cmd[1], target_cmd[2]);
@@ -48,10 +51,16 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     }
     
     // Smooth interpolation to target
+    // Use faster smoothing when stopping (target is zero) to prevent marching in place
+    float effective_smoothing = (target_cmd[0] == 0.0f && target_cmd[1] == 0.0f && target_cmd[2] == 0.0f) 
+                                 ? stop_smoothing : smoothing;
+    
     for(size_t i = 0; i < 3; i++) {
-        current_cmd[i] += (target_cmd[i] - current_cmd[i]) * smoothing;
-        // Deadzone for near-zero values
-        if(std::abs(current_cmd[i]) < 0.01f) current_cmd[i] = 0.0f;
+        current_cmd[i] += (target_cmd[i] - current_cmd[i]) * effective_smoothing;
+        // Aggressive deadzone for near-zero values to prevent marching in place
+        if(std::abs(current_cmd[i]) < deadzone) {
+            current_cmd[i] = 0.0f;
+        }
     }
     
     return current_cmd;
