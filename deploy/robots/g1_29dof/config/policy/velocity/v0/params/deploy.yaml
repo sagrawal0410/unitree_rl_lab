@@ -42,7 +42,7 @@ observations:
     params: {command_name: base_velocity}
     clip: null
     scale: [1.0, 1.0, 1.0]
-    history_length: 5
+    history_length: 1
   joint_pos_rel:
     params: {}
     clip: null
