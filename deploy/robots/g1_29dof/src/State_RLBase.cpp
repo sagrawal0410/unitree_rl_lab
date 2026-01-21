@@ -35,31 +35,43 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     static std::vector<float> current_cmd = {0.0f, 0.0f, 0.0f};
     static std::vector<float> target_cmd = {0.0f, 0.0f, 0.0f};
     const float smoothing = 0.15f;  // Smooth acceleration (lower = smoother)
-    const float stop_smoothing = 0.4f;  // Faster decay when stopping (higher = faster)
-    const float deadzone = 0.05f;  // More aggressive deadzone to prevent marching in place
+    const float deadzone = 0.005f;  // Very small deadzone - zero out tiny values immediately
     
-    // Update target based on key press
-    bool key_pressed = (key_commands.find(key) != key_commands.end());
-    if (key_pressed)
+    // Check if a valid movement key is pressed
+    bool key_pressed = (key_commands.find(key) != key_commands.end() && !key.empty());
+    
+    // Check if key was just released - immediately zero to prevent marching
+    bool key_released = FSMState::keyboard->on_released;
+    
+    if (key_released)
+    {
+        // Immediately zero out when key is released to prevent marching in place
+        current_cmd = {0.0f, 0.0f, 0.0f};
+        target_cmd = {0.0f, 0.0f, 0.0f};
+    }
+    else if (key_pressed)
     {
         target_cmd = key_commands[key];
         spdlog::info("Command: [{:.3f}, {:.3f}, {:.3f}]", target_cmd[0], target_cmd[1], target_cmd[2]);
+        
+        // Smooth interpolation to target when key is pressed
+        for(size_t i = 0; i < 3; i++) {
+            current_cmd[i] += (target_cmd[i] - current_cmd[i]) * smoothing;
+        }
     }
     else
     {
-        target_cmd = {0.0f, 0.0f, 0.0f};  // Stop when no key pressed
-    }
-    
-    // Smooth interpolation to target
-    // Use faster smoothing when stopping (target is zero) to prevent marching in place
-    float effective_smoothing = (target_cmd[0] == 0.0f && target_cmd[1] == 0.0f && target_cmd[2] == 0.0f) 
-                                 ? stop_smoothing : smoothing;
-    
-    for(size_t i = 0; i < 3; i++) {
-        current_cmd[i] += (target_cmd[i] - current_cmd[i]) * effective_smoothing;
-        // Aggressive deadzone for near-zero values to prevent marching in place
-        if(std::abs(current_cmd[i]) < deadzone) {
-            current_cmd[i] = 0.0f;
+        // When no key is pressed (but not just released), use very fast decay
+        const float fast_stop_smoothing = 0.9f;  // Very fast decay when stopping
+        
+        for(size_t i = 0; i < 3; i++) {
+            // Fast decay towards zero using exponential decay
+            current_cmd[i] *= (1.0f - fast_stop_smoothing);
+            
+            // Immediately zero if below deadzone to prevent any residual command
+            if(std::abs(current_cmd[i]) < deadzone) {
+                current_cmd[i] = 0.0f;
+            }
         }
     }
     
