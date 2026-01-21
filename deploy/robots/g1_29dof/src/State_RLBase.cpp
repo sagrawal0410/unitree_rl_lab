@@ -25,8 +25,8 @@ REGISTER_OBSERVATION(keyboard_velocity_commands)
     static std::unordered_map<std::string, std::vector<float>> key_commands = {
         {"w", {0.5f, 0.0f, 0.0f}},    // Walk forward - generalizes well
         {"s", {-0.5f, 0.0f, 0.0f}},   // Walk backward - generalizes well  
-        {"a", {0.0f, 0.10f, 0.0f}},   // Strafe left (50% of training max)
-        {"d", {0.0f, -0.10f, 0.0f}},  // Strafe right (50% of training max)
+        {"a", {0.0f, 0.00f, 0.0f}},   // Strafe left (50% of training max)
+        {"d", {0.0f, -0.00f, 0.0f}},  // Strafe right (50% of training max)
         {"q", {0.0f, 0.0f, 1.00f}},   // Turn left (50% max - CRITICAL: no ang curriculum)
         {"e", {0.0f, 0.0f, -1.00f}}   // Turn right (50% max - CRITICAL: no ang curriculum)
     };
